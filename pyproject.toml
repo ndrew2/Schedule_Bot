@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "Schedule_Bot"
+version = "0.1.0"
+description = ""
+authors = ["andgri200@gmail.com"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiogram = "^2.19"
+tortoise-orm = "^0.18.1"
+aerich = "^0.6.2"
+aiosqlite = "^0.17.0"
+python-dotenv = "^0.19.2"
+
+[tool.poetry.dev-dependencies]
+
+
+[tool.aerich]
+tortoise_orm = "app.config.TORTOISE_ORM"
+location = "./migrations"
+src_folder = "./."
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
