@@ -239,7 +239,7 @@ async def _(user: User, event: types.CallbackQuery):
 
     await course.delete()
 
-    await event.answer("Курс удален")
+    await event.message.reply("Курс удален")
     await to_state(user, State.default)
 
 
