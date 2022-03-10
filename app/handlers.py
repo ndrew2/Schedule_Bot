@@ -99,7 +99,7 @@ async def _(user: User, event: types.Message):
     for course in courses:
         keyboard_inline.insert(InlineKeyboardButton(text=f"{course.name}", callback_data=f"{course.id}"))
 
-    await event.answer(f"Выберите курс, название которого хотите поменять:")
+    await event.reply(f"Выберите курс, название которого хотите поменять:")
 
     await to_state(user, State.change_course_name_2)
 
@@ -115,7 +115,7 @@ async def _(user: User, event: types.Message):
         ans = "Ваши курсы: \n"
 
         for course in courses:
-            ans += f"{course.name}" # (автор:tg://user?id=)\n"
+            ans += f"{course.name}\n" # (автор:tg://user?id=)\n"
 
         await event.answer(ans)
 
