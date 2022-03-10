@@ -424,5 +424,5 @@ async def _(user: User, event: types.CallbackQuery):
         id=course_id
     ).first()
 
-    await event.message.reply(f"t.me/testov_test_testovich_bot?start={course.id}")
+    await event.message.reply(f"t.me/course_schedule_bot?start={course.id}")
     await to_state(user, State.default)
