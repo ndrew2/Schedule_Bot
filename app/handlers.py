@@ -72,9 +72,25 @@ async def _(user: User, event: types.Message):
 @dp.message_handler(Command("delete_course"))
 @get_user
 async def _(user: User, event: types.Message):
-    await event.answer(f"Введите название курса, который хотите удалить:")
+    courses = await Course.filter(
+        author=user
+    )
+
+    keyboard_inline = InlineKeyboardMarkup()
+
+    for course in courses:
+        keyboard_inline.insert(InlineKeyboardButton(text=f"{course.name}", callback_data=f"{course.id}"))
+
+    await event.reply("Выберите курс, который хотите удалить:", reply_markup=keyboard_inline)
 
     await to_state(user, State.delete_course_2)
+
+@dp.message_handler(Command("change_course_name"))
+@get_user
+async def _(user: User, event: types.Message):
+    await event.answer(f"Введите название курса, название которого хотите поменять:")
+
+    await to_state(user, State.change_course_name_2)
 
 
 @dp.message_handler(Command("my_courses"))
@@ -98,14 +114,33 @@ async def _(user: User, event: types.Message):
 async def _(user: User, event: types.Message):
     # TODO: кнопочки для курсов
 
-    await event.answer("Сперва, введите название курса:")
+    courses = await Course.filter(
+        author=user
+    )
+
+    keyboard_inline = InlineKeyboardMarkup()
+
+    for course in courses:
+        keyboard_inline.insert(InlineKeyboardButton(text=f"{course.name}", callback_data=f"{course.id}"))
+
+    await event.reply("Сперва, выберите курс:", reply_markup=keyboard_inline)
+
     await to_state(user, State.add_lesson_2)
 
 
 @dp.message_handler(Command("get_link"))
 @get_user
 async def _(user: User, event: types.Message):
-    await event.answer("Введите название курса:")
+    courses = await Course.filter(
+        author=user
+    )
+
+    keyboard_inline = InlineKeyboardMarkup()
+
+    for course in courses:
+        keyboard_inline.insert(InlineKeyboardButton(text=f"{course.name}", callback_data=f"{course.id}"))
+
+    await event.reply("Выберите курс:", reply_markup=keyboard_inline)
 
     await to_state(user, State.get_link_2)
 
@@ -146,11 +181,20 @@ async def _(user: User, event: types.Message):
                 start_time = f"{lesson_start.hour}:{lesson_start.minute}"
                 if (f"{lesson_start.minute}" == '0'):
                     start_time += '0'
+                if (len(f"{lesson_start.minute}") < 2 and f"{lesson_start.minute}" != '0'):
+                    start_time = start_time[:-1]
+                    start_time += f'0{lesson_start.minute}'
                 end_time = f"{lesson_end.hour}:{lesson_end.minute}"
                 if (f"{lesson_end.minute}" == '0'):
                     end_time += '0'
+                if (len(f"{lesson_end.minute}") < 2 and f"{lesson_end.minute}" != '0'):
+                    end_time = end_time[:-1]
+                    end_time += f'0{lesson_end.minute}'
                 ans += f"{start_time} — {end_time} (<i>{escape_html(course_name)}</i>)\n"
             ans += '\n'
+
+    if ans == '':
+        ans = "Вы пока не записались ни на один курс."
 
     await event.answer(ans, parse_mode="HTML")
 
@@ -182,19 +226,14 @@ async def _(user: User, event: types.Message):
     await to_state(user, State.default)
 
 
-@dp.message_handler(StateFilter(State.delete_course_2))
+@dp.callback_query_handler(StateFilter(State.delete_course_2))
 @get_user
-async def _(user: User, event: types.Message):
-    course_name = event.text
+async def _(user: User, event: types.CallbackQuery):
+    course_id = int(event.data)
 
     course = await Course.filter(
-        name=course_name,
-        author=user
+        id=course_id
     ).first()
-
-    if course is None:
-        await event.answer("Выбран несуществующий курс. Пожалуйста, введите другое название или отмените действие (/cancel):")
-        return
 
     await course.delete()
 
@@ -202,7 +241,7 @@ async def _(user: User, event: types.Message):
     await to_state(user, State.default)
 
 
-@dp.message_handler(StateFilter(State.add_lesson_2))
+@dp.message_handler(StateFilter(State.change_course_name_2))
 @get_user
 async def _(user: User, event: types.Message):
     course = await Course.filter(
@@ -213,6 +252,42 @@ async def _(user: User, event: types.Message):
     if course is None:
         await event.answer("Выбран несуществующий курс. Пожалуйста, введите другое название или отмените действие (/cancel):")
         return
+
+    await event.answer("Теперь введите новое название курса:")
+
+    await to_state(
+        user,
+        State.change_course_name_3,
+        {
+            "course": course,
+        },
+    )
+
+
+@dp.message_handler(StateFilter(State.change_course_name_3))
+@get_user
+async def _(user: User, event: types.Message):
+    course = user.state_data["course"]
+
+    ans = f'Курс "{course.name}" переименован в: '
+
+    course.name = event.text
+
+    ans += f'{course.name}'
+
+    await event.answer(ans)
+
+    await to_state(user, State.default)
+
+
+@dp.callback_query_handler(StateFilter(State.add_lesson_2))
+@get_user
+async def _(user: User, event: types.CallbackQuery):
+    course_id = int(event.data)
+
+    course = await Course.filter(
+        id=course_id
+    ).first()
 
     keyboard1 = ReplyKeyboardMarkup(resize_keyboard=True)
 
@@ -225,13 +300,13 @@ async def _(user: User, event: types.Message):
              'Воскресенье':
         keyboard1.insert(KeyboardButton(i))
 
-    await event.reply("Теперь выберите день недели:", reply_markup=keyboard1)
+    await event.message.reply("Теперь выберите день недели:", reply_markup=keyboard1)
 
     await to_state(
         user,
         State.add_lesson_3,
         {
-            "course_name": event.text,
+            "course_name": course.name,
         },
     )
 
@@ -298,17 +373,14 @@ async def _(user: User, event: types.Message):
     await to_state(user, State.default)
 
 
-@dp.message_handler(StateFilter(State.get_link_2))
+@dp.callback_query_handler(StateFilter(State.get_link_2))
 @get_user
-async def _(user: User, event: types.Message):
-    course = await Course.filter(
-        name=event.text,
-        author=user
-    ).first()
+async def _(user: User, event: types.CallbackQuery):
+    course_id = int(event.data)
 
-    if course is None:
-        await event.answer("Выбран несуществующий курс. Пожалуйста, введите другое название или отмените действие (/cancel):")
-        return
+    course = await Course.filter(
+        id=course_id
+    ).first()
 
     await event.answer(f"t.me/testov_test_testovich_bot?start={course.id}")
     await to_state(user, State.default)

@@ -10,3 +10,5 @@ class State(str, Enum):
     add_lesson_5 = 'add_lesson_5'
     delete_course_2 = 'delete_course_2'
     get_link_2 = 'get_link_2'
+    change_course_name_2 = 'change_course_name_2'
+    change_course_name_3 = 'change_course_name_3'
