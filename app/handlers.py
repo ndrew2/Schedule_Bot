@@ -90,7 +90,16 @@ async def _(user: User, event: types.Message):
 @dp.message_handler(Command("change_course_name"))
 @get_user
 async def _(user: User, event: types.Message):
-    await event.answer(f"Введите название курса, название которого хотите поменять:")
+    courses = await Course.filter(
+        author=user
+    )
+
+    keyboard_inline = InlineKeyboardMarkup()
+
+    for course in courses:
+        keyboard_inline.insert(InlineKeyboardButton(text=f"{course.name}", callback_data=f"{course.id}"))
+
+    await event.answer(f"Выберите курс, название которого хотите поменять:")
 
     await to_state(user, State.change_course_name_2)
 
@@ -243,19 +252,16 @@ async def _(user: User, event: types.CallbackQuery):
     await to_state(user, State.default)
 
 
-@dp.message_handler(StateFilter(State.change_course_name_2))
+@dp.callback_query_handler(StateFilter(State.change_course_name_2))
 @get_user
-async def _(user: User, event: types.Message):
+async def _(user: User, event: types.CallbackQuery):
+    course_id = int(event.data)
+
     course = await Course.filter(
-        name=event.text,
-        author=user
+        id=course_id
     ).first()
 
-    if course is None:
-        await event.answer("Выбран несуществующий курс. Пожалуйста, введите другое название или отмените действие (/cancel):")
-        return
-
-    await event.answer("Теперь введите новое название курса:")
+    await event.message.reply("Теперь введите новое название курса:")
 
     await to_state(
         user,
