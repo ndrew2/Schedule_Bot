@@ -55,6 +55,8 @@ async def _(user: User, event: types.Message):
         "Доступные команды: \n\n"
         "/add_course - Добавить курс\n"
         "/delete_course - Удалить курс\n"
+        "/change_course_name - Поменять название курса\n"
+        "/get_link - Получить ссылку на курс\n"
         "/add_lesson - Добавить урок в курс\n"
         "/my_courses - Список моих курсов\n"
         "/show_schedule - Показать расписание\n"
@@ -333,6 +335,15 @@ async def _(user: User, event: types.Message):
 async def _(user: User, event: types.Message):
     # TODO: валидация
 
+    start_time = event.text
+
+    st_h = int(start_time[0]) * 10 + int(start_time[1])
+    st_m = int(start_time[3]) * 10 + int(start_time[4])
+
+    if (st_h < 0 or st_h > 24 or st_m < 0 or st_m > 59):
+        await event.answer("Время введено в неправильном формате. Повторите попытку.")
+        return
+
     await event.answer("Введите время конца урока (в формате HH:MM)")
     await to_state(
         user,
@@ -350,9 +361,22 @@ BASE_DATE = datetime(2000, 1, 3)
 @dp.message_handler(StateFilter(State.add_lesson_5))
 @get_user
 async def _(user: User, event: types.Message):
+    end_time = event.text
+
+    end_h = int(end_time[0]) * 10 + int(end_time[1])
+    end_m = int(end_time[3]) * 10 + int(end_time[4])
+
+    if (end_h < 0 or end_h > 24 or end_m < 0 or end_m > 59):
+        await event.answer("Время введено в неправильном формате. Повторите попытку.")
+        return
+
     weekday = user.state_data["weekday"]
     start_time = datetime.strptime(user.state_data["start_time"], "%H:%M")
     end_time = datetime.strptime(event.text, "%H:%M")
+
+    if (start_time > end_time):
+        await event.answer("Время введено в неправильном формате. Повторите попытку.")
+        return
 
     day = BASE_DATE + timedelta(days=weekday)
     start_datetime = day.replace(hour=start_time.hour, minute=start_time.minute)
