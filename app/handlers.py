@@ -337,6 +337,12 @@ async def _(user: User, event: types.Message):
 
     start_time = event.text
 
+    if (start_time[1] == ':'):
+        start_time = '0' + start_time
+
+    if (len(start_time) == 4):
+        start_time = start_time[:3] + '0' + start_time[-1]
+
     st_h = int(start_time[0]) * 10 + int(start_time[1])
     st_m = int(start_time[3]) * 10 + int(start_time[4])
 
@@ -362,6 +368,12 @@ BASE_DATE = datetime(2000, 1, 3)
 @get_user
 async def _(user: User, event: types.Message):
     end_time = event.text
+
+    if (end_time[1] == ':'):
+        end_time = '0' + end_time
+
+    if (len(end_time) == 4):
+        end_time = end_time[:3] + '0' + end_time[-1]
 
     end_h = int(end_time[0]) * 10 + int(end_time[1])
     end_m = int(end_time[3]) * 10 + int(end_time[4])
